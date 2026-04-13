@@ -1,6 +1,10 @@
 from snowflake.snowpark.functions import col, lit, concat, count, sum as sum_, coalesce
 
 def model(dbt, session):
+
+    dbt.config(
+        schema='EDW'
+    )
     """
     This model demonstrates basic Snowpark transformations using dbt Python models.
     It joins location data with trucks and aggregates metrics by location.

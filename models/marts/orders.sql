@@ -1,3 +1,4 @@
+{{ config(schema='EDW') }}
 SELECT 
     oh.order_id,
     oh.truck_id,
