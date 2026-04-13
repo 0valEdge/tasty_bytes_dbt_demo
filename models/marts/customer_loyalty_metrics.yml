@@ -1,0 +1,242 @@
+version: 2
+
+models:
+  - name: customer_sales
+    description: "Aggregated customer sales with total revenue and visited locations"
+
+    config:
+      schema: EDW
+      materialized: incremental
+      unique_key: customer_id
+
+      contract:
+        enforced: true   # 🔹 Data contract enforcement
+
+      tags:
+        - gold
+        - customer
+        - sales
+
+      meta:
+        owner: data_engineering_team
+        domain: customer_analytics
+        sensitivity: medium
+
+    # 🔹 Model-level tests (table-level validation)
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - customer_id
+
+      - dbt_utils.expression_is_true:
+          expression: "total_sales >= 0"
+
+      - dbt_utils.equal_rowcount:
+          compare_model: ref('raw_customer_customer_loyalty')   # reconciliation check
+
+      - dbt_utils.fewer_rows_than:
+          compare_model: ref('raw_customer_customer_loyalty')   # anomaly detection
+
+    columns:
+
+      - name: customer_id
+        description: "Unique identifier for customer"
+        data_type: integer
+
+        tests:
+          - not_null
+          - unique
+
+        constraints:
+          - type: primary_key
+
+        meta:
+          pii: false
+
+      - name: first_name
+        description: "Customer first name"
+        data_type: varchar
+
+        tests:
+          - not_null
+
+      - name: last_name
+        description: "Customer last name"
+        data_type: varchar
+
+        tests:
+          - not_null
+
+      - name: e_mail
+        description: "Customer email address"
+        data_type: varchar
+
+        tests:
+          - not_null
+          - unique
+          - dbt_expectations.expect_column_values_to_match_regex:
+              regex: '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+
+        meta:
+          pii: true
+
+      - name: country
+        description: "Customer country"
+        data_type: varchar
+
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['USA', 'India', 'UK', 'Canada']
+
+      - name: city
+        description: "Customer city"
+        data_type: varchar
+
+        tests:
+          - not_null
+
+      - name: phone_number
+        description: "Customer phone number"
+        data_type: varchar
+
+        tests:
+          - not_null
+          - test_valid_phone
+
+        meta:
+          pii: true
+
+      - name: total_sales
+        description: "Total sales amount per customer"
+        data_type: number
+
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "total_sales >= 0"
+
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              strictly: false
+
+      - name: visited_location_ids_array
+        description: "Array of distinct visited location IDs"
+        data_type: variant
+
+        tests:
+          - not_null
+
+      - name: created_at
+        description: "Record creation timestamp"
+        data_type: timestamp
+
+        tests:
+          - not_null
+
+      - name: updated_at
+        description: "Last update timestamp"
+        data_type: timestamp
+
+        tests:
+          - not_null
+
+    # 🔹 Freshness-style validation (if model is incremental / near-real-time)
+    meta:
+      freshness_check:
+        warn_after_hours: 12
+        error_after_hours: 24
+
+
+# ✅ SEMANTIC MODEL
+semantic_models:
+  - name: customer_sales_semantic
+    description: "Semantic model for customer-level sales analytics"
+
+    model: ref('customer_sales')
+
+    defaults:
+      agg_time_dimension: created_at
+
+    entities:
+      - name: customer_id
+        type: primary
+
+    dimensions:
+      - name: country
+        type: categorical
+
+      - name: city
+        type: categorical
+
+      - name: first_name
+        type: categorical
+
+      - name: last_name
+        type: categorical
+
+    measures:
+      - name: total_sales
+        description: "Total revenue per customer"
+        agg: sum
+        expr: total_sales
+
+      - name: customer_count
+        description: "Total number of customers"
+        agg: count
+        expr: customer_id
+
+
+# ✅ METRICS (Enhanced)
+metrics:
+
+  - name: total_revenue
+    label: "Total Revenue"
+    model: ref('customer_sales')
+    calculation_method: sum
+    expression: total_sales
+    timestamp: created_at
+    time_grains: [day, week, month]
+
+  - name: total_customers
+    label: "Total Customers"
+    model: ref('customer_sales')
+    calculation_method: count
+    expression: customer_id
+    timestamp: created_at
+
+  - name: avg_revenue_per_customer
+    label: "Average Revenue per Customer"
+    model: ref('customer_sales')
+    calculation_method: derived
+    expression: total_revenue / total_customers
+
+
+# ✅ UNIT TEST (dbt v1.6+)
+unit_tests:
+
+  - name: test_total_sales_non_negative
+
+    model: customer_sales
+
+    given:
+
+      # 🔹 Input 1
+      - input: ref('raw_customer_customer_loyalty')
+        rows:
+          - customer_id: 1
+          - customer_id: 2
+
+      # 🔹 Input 2
+      - input: ref('raw_pos_order_header')
+        rows:
+          - customer_id: 1
+            total_sales: 100
+
+          - customer_id: 2
+            total_sales: -50
+
+    expect:
+      rows:
+        - customer_id: 1
+          total_sales: 100
