@@ -1,3 +1,4 @@
+{{ config(schema='EDW') }}
 SELECT 
     cl.customer_id,
     cl.city,
