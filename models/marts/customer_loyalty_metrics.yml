@@ -107,4 +107,3 @@ models:
         data_type: variant
         tests:
           - not_null
-  
