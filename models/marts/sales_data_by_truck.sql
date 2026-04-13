@@ -1,3 +1,5 @@
+{{ config(schema='EDW') }}
+
 with order_details as (
     select 
         od.order_id,
