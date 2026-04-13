@@ -20,6 +20,6 @@ clean-targets: [target, dbt_modules]
 models:
   tasty_bytes:
     staging:
-      +materialized: view
-    marts:
       +materialized: table
+    marts:
+      +materialized: view
