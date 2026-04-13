@@ -1,6 +1,5 @@
-## Project
-name: tasty_bytes
-version: "1.0"
+name: 'tasty_bytes'
+version: "2.0"
 config-version: 2
 profile: tasty_bytes
 
@@ -24,3 +23,6 @@ models:
       +materialized: table
     marts:
       +materialized: view
+tests:
+  +store_failures: true
+  +severity: warn
