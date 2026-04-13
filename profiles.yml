@@ -1,0 +1,17 @@
+tasty_bytes:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      role: accountadmin
+      database: TASTY_BYTES_DB
+      schema: dev
+      warehouse: LOAD_WH
+      threads: 8
+    prod:
+      type: snowflake
+      role: accountadmin
+      database: TASTY_BYTES_DB
+      schema: prod
+      warehouse: LOAD_WH
+      threads: 8
