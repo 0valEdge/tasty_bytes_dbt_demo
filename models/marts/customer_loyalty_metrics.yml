@@ -77,7 +77,10 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ['USA', 'India', 'UK', 'Canada']
+                values: ['USA', 'India']
+          - accepted_values:
+              arguments:
+                values: ['UK', 'Canada']
 
       - name: city
         description: "Customer city"
