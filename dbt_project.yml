@@ -26,3 +26,8 @@ models:
 tests:
   +store_failures: true
   +severity: warn
+on-run-start:
+  - "{{ create_dq_tables()}}"
+on-run-end:
+  - "{{ dqstats_log_results(results)}}"
+  - "{{dq_failure_records(results)}}"
