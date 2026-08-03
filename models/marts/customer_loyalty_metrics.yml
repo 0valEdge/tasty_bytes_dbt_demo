@@ -110,3 +110,27 @@ models:
         data_type: variant
         tests:
           - not_null
+unit_tests:
+  - name: test_is_valid_email_address
+    description: "Check my is_valid_email_address logic captures all known edge cases - emails without ., emails without @, and emails from invalid domains."
+    model: customer_loyalty_metrics
+    given:
+      - input: ref('raw_customer_customer_loya')
+        format: dict
+        rows:
+          - {email: cool@example.com,    email_top_level_domain: example.com}
+          - {email: cool@unknown.com,    email_top_level_domain: unknown.com}
+          - {email: badgmail.com,        email_top_level_domain: gmail.com}
+          - {email: missingdot@gmailcom, email_top_level_domain: gmail.com}
+      - input: ref('top_level_email_domains')
+        format: dict
+        rows:
+          - {tld: example.com}
+          - {tld: gmail.com}
+    expect:
+      format: dict
+      rows:
+        - {email: cool@example.com,    is_valid_email_address: true}
+        - {email: cool@unknown.com,    is_valid_email_address: false}
+        - {email: badgmail.com,        is_valid_email_address: false}
+        - {email: missingdot@gmailcom, is_valid_email_address: false}
