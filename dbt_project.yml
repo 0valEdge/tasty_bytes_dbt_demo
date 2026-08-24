@@ -16,6 +16,14 @@ snapshot-paths: [snapshots]
 target-path: target
 clean-targets: [target, dbt_modules]
 
+seeds:
+  tasty_bytes:
+    parameters:
+      +schema: parameters
+      +column_types:
+        parameter_name: varchar(200)
+        parameter_value: varchar(200)
+
 ## Models
 models:
   tasty_bytes:
@@ -26,3 +34,7 @@ models:
 tests:
   +store_failures: true
   +severity: warn
+on-run-start:
+  - "{{ create_dq_tables()}}"
+on-run-end:
+  - "{{ dqstats_log_results(results)}}"
